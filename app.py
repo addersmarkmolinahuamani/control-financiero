@@ -44,15 +44,11 @@ if not df.empty and "fecha" in df.columns:
 # --- INTERFAZ ---
 st.title("💳 Mi Control Financiero")
 
-# Formulario de entrada
-with st.expander("➕ Ingresar Movimiento", expanded=False):
-    tipo = st.radio("Tipo de movimiento", ["Egreso", "Ingreso"], horizontal=True)
-
-    # Categorías base mínimas aseguradas (incluyendo 'ana')
+# Categorías base mínimas aseguradas
 base_egresos = ["ana", "casa", "comida", "cuotas", "educación", "gustos", "movilidad", "Padres", "salud", "trabajo", "Vestimenta", "otros"]
 base_ingresos = ["Sunass", "CAS", "gratificación", "cobro de deuda", "otros"]
 
-# Extraer categorías existentes en el histórico para que nunca falte ninguna
+# Extraer categorías existentes en el histórico de la base de datos
 if not df.empty and "categoria" in df.columns:
     egresos_db = df[df["tipo"].str.lower() == "egreso"]["categoria"].dropna().unique().tolist()
     ingresos_db = df[df["tipo"].str.lower() == "ingreso"]["categoria"].dropna().unique().tolist()
@@ -60,7 +56,11 @@ if not df.empty and "categoria" in df.columns:
     cats_ingreso = sorted(list(set(base_ingresos + ingresos_db)))
 else:
     cats_egreso = sorted(base_egresos)
-    cats_ingreso = sorted(base_ingresos)"otros"]
+    cats_ingreso = sorted(base_ingresos)
+
+# Formulario de entrada
+with st.expander("➕ Ingresar Movimiento", expanded=False):
+    tipo = st.radio("Tipo de movimiento", ["Egreso", "Ingreso"], horizontal=True)
 
     with st.form("nuevo_movimiento", clear_on_submit=True):
         col_f1, col_f2 = st.columns(2)
