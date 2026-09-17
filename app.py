@@ -57,6 +57,8 @@ if not df.empty and "fecha" in df.columns:
     df = df.dropna(subset=["fecha"])
     df["mes_periodo"] = df["fecha"].dt.strftime("%Y-%m")
     df["monto"] = pd.to_numeric(df["monto"], errors="coerce").fillna(0.0)
+    if "categoria" in df.columns:
+        df["categoria"] = df["categoria"].astype(str).str.strip()
 
 # --- INTERFAZ ---
 st.title("💳 Mi Control Financiero")
@@ -112,17 +114,13 @@ if not df.empty and "mes_periodo" in df.columns:
     st.subheader("📊 Resumen Financiero")
     meses_disponibles = sorted(df["mes_periodo"].unique().tolist(), reverse=True)
     
-    # Lista de opciones: meses ordenados de más reciente a más antiguo, más la opción consolidada
     opciones_filtro = meses_disponibles + ["Consolidado Total"]
-    
-    # Calcular el mes actual en formato "YYYY-MM"
     mes_actual_str = date.today().strftime("%Y-%m")
     
-    # Determinar qué posición seleccionar por defecto (el mes en curso si existe en la BD)
     if mes_actual_str in opciones_filtro:
         indice_defecto = opciones_filtro.index(mes_actual_str)
     else:
-        indice_defecto = 0  # Si no hay registros de este mes, muestra el mes más reciente disponible
+        indice_defecto = 0
 
     mes_seleccionado = st.selectbox(
         "📅 Selecciona el periodo a visualizar:",
@@ -155,7 +153,7 @@ kpi3.metric("Disponible", f"S/ {disponible:,.2f}", delta=f"{disponible:,.2f}")
 # --- GRÁFICOS ---
 if not df_filtrado.empty and egresos > 0:
     st.markdown("---")
-    df_egresos = df_filtrado[df_filtrado["tipo"].str.lower() == "egreso"]
+    df_egresos = df_filtrado[df_filtrado["tipo"].str.lower() == "egreso"].copy()
 
     col_g1, col_g2 = st.columns(2)
     with col_g1:
@@ -186,6 +184,32 @@ if not df_filtrado.empty and egresos > 0:
             }
         ))
         st.plotly_chart(fig_gauge, width="stretch")
+
+    # --- NUEVO GRÁFICO DE BARRAS: TOTALES POR CATEGORÍA ---
+    df_cat_totales = df_egresos.groupby("categoria", as_index=False)["monto"].sum()
+    df_cat_totales = df_cat_totales.sort_values(by="monto", ascending=False)
+
+    fig_bar = px.bar(
+        df_cat_totales,
+        x="categoria",
+        y="monto",
+        text="monto",
+        title=f"Total de Egresos por Categoría (S/.) - {etiqueta_periodo}",
+        labels={"categoria": "Categoría", "monto": "Monto Total (S/.)"},
+        color="monto",
+        color_continuous_scale="Blues"
+    )
+    fig_bar.update_traces(
+        texttemplate='S/ %{text:,.2f}',
+        textposition='outside'
+    )
+    fig_bar.update_layout(
+        xaxis_tickangle=-45,
+        uniformtext_minsize=8,
+        uniformtext_mode='hide',
+        showlegend=False
+    )
+    st.plotly_chart(fig_bar, width="stretch")
 
     st.markdown("### Movimientos del Periodo")
     df_mostrar = df_filtrado[["fecha", "tipo", "categoria", "detalle", "monto"]].copy()
