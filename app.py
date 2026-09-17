@@ -48,8 +48,19 @@ st.title("💳 Mi Control Financiero")
 with st.expander("➕ Ingresar Movimiento", expanded=False):
     tipo = st.radio("Tipo de movimiento", ["Egreso", "Ingreso"], horizontal=True)
 
-    cats_egreso = ["comida", "educación", "gustos", "cuotas", "casa", "Padres", "trabajo", "salud", "otros"]
-    cats_ingreso = ["Sunass", "CAS", "gratificación", "cobro de deuda", "otros"]
+    # Categorías base mínimas aseguradas (incluyendo 'ana')
+base_egresos = ["ana", "casa", "comida", "cuotas", "educación", "gustos", "movilidad", "Padres", "salud", "trabajo", "Vestimenta", "otros"]
+base_ingresos = ["Sunass", "CAS", "gratificación", "cobro de deuda", "otros"]
+
+# Extraer categorías existentes en el histórico para que nunca falte ninguna
+if not df.empty and "categoria" in df.columns:
+    egresos_db = df[df["tipo"].str.lower() == "egreso"]["categoria"].dropna().unique().tolist()
+    ingresos_db = df[df["tipo"].str.lower() == "ingreso"]["categoria"].dropna().unique().tolist()
+    cats_egreso = sorted(list(set(base_egresos + egresos_db)))
+    cats_ingreso = sorted(list(set(base_ingresos + ingresos_db)))
+else:
+    cats_egreso = sorted(base_egresos)
+    cats_ingreso = sorted(base_ingresos)"otros"]
 
     with st.form("nuevo_movimiento", clear_on_submit=True):
         col_f1, col_f2 = st.columns(2)
