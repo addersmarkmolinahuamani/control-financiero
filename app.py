@@ -13,6 +13,23 @@ SUPABASE_KEY = "sb_publishable_-F-3L3EmsN2DGdQ3xLvKgQ_0_DFq1CY"
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+# Diccionario de meses en español
+NOMBRES_MESES = {
+    "01": "enero", "02": "febrero", "03": "marzo", "04": "abril",
+    "05": "mayo", "06": "junio", "07": "julio", "08": "agosto",
+    "09": "septiembre", "10": "octubre", "11": "noviembre", "12": "diciembre"
+}
+
+def formato_mes_espanol(codigo_periodo):
+    """Convierte 'YYYY-MM' en 'mes YYYY' (ej: '2026-09' -> 'septiembre 2026')"""
+    if codigo_periodo == "Consolidado Total":
+        return "Consolidado Total"
+    try:
+        anio, mes = codigo_periodo.split("-")
+        return f"{NOMBRES_MESES.get(mes, mes)} {anio}"
+    except Exception:
+        return codigo_periodo
+
 def cargar_datos():
     try:
         res = supabase.table("movimientos").select("*").order("fecha", desc=True).execute()
@@ -69,7 +86,7 @@ with st.expander("➕ Ingresar Movimiento", expanded=False):
             categoria = st.selectbox("Categoría", cats_egreso if tipo == "Egreso" else cats_ingreso)
         with col_f2:
             monto = st.number_input("Monto (S/.)", min_value=0.0, step=1.0, format="%.2f")
-            detalle = st.text_input("Detalle", placeholder="Ej. Menú, luz, cuota...")
+            detalle = st.text_input("Detalle", placeholder="Ej. Menú, pasaje, cuota...")
 
         btn_guardar = st.form_submit_button("Guardar en el acto")
 
@@ -90,20 +107,40 @@ with st.expander("➕ Ingresar Movimiento", expanded=False):
 
 st.markdown("---")
 
-# --- FILTRO MENSUAL ---
+# --- FILTRO MENSUAL INTELIGENTE ---
 if not df.empty and "mes_periodo" in df.columns:
     st.subheader("📊 Resumen Financiero")
     meses_disponibles = sorted(df["mes_periodo"].unique().tolist(), reverse=True)
-    opciones_filtro = ["Consolidado Total"] + meses_disponibles
-    mes_seleccionado = st.selectbox("📅 Selecciona el periodo a visualizar:", opciones_filtro)
+    
+    # Lista de opciones: meses ordenados de más reciente a más antiguo, más la opción consolidada
+    opciones_filtro = meses_disponibles + ["Consolidado Total"]
+    
+    # Calcular el mes actual en formato "YYYY-MM"
+    mes_actual_str = date.today().strftime("%Y-%m")
+    
+    # Determinar qué posición seleccionar por defecto (el mes en curso si existe en la BD)
+    if mes_actual_str in opciones_filtro:
+        indice_defecto = opciones_filtro.index(mes_actual_str)
+    else:
+        indice_defecto = 0  # Si no hay registros de este mes, muestra el mes más reciente disponible
+
+    mes_seleccionado = st.selectbox(
+        "📅 Selecciona el periodo a visualizar:",
+        opciones_filtro,
+        index=indice_defecto,
+        format_func=formato_mes_espanol
+    )
 
     if mes_seleccionado != "Consolidado Total":
         df_filtrado = df[df["mes_periodo"] == mes_seleccionado]
+        etiqueta_periodo = formato_mes_espanol(mes_seleccionado)
     else:
         df_filtrado = df
+        etiqueta_periodo = "Consolidado Total"
 else:
     df_filtrado = df
     mes_seleccionado = "Consolidado Total"
+    etiqueta_periodo = "Consolidado Total"
 
 # --- KPIs ---
 ingresos = df_filtrado[df_filtrado["tipo"].str.lower() == "ingreso"]["monto"].sum() if not df_filtrado.empty else 0.0
@@ -128,7 +165,7 @@ if not df_filtrado.empty and egresos > 0:
                 values="monto",
                 names="categoria",
                 hole=0.55,
-                title=f"Egresos por Categoría ({mes_seleccionado})"
+                title=f"Egresos por Categoría ({etiqueta_periodo})"
             )
             st.plotly_chart(fig_donut, width="stretch")
 
@@ -150,9 +187,9 @@ if not df_filtrado.empty and egresos > 0:
         ))
         st.plotly_chart(fig_gauge, width="stretch")
 
-    st.markdown("### Movimientos Recientes")
+    st.markdown("### Movimientos del Periodo")
     df_mostrar = df_filtrado[["fecha", "tipo", "categoria", "detalle", "monto"]].copy()
     df_mostrar['fecha'] = df_mostrar['fecha'].dt.strftime("%Y-%m-%d")
     st.dataframe(df_mostrar.head(15), width="stretch")
 else:
-    st.info("No hay registros en este periodo.")
+    st.info(f"No hay movimientos registrados para {etiqueta_periodo}.")
