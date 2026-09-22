@@ -269,30 +269,27 @@ if not df_filtrado.empty and egresos > 0:
             st.markdown('</div>', unsafe_allow_html=True)
 
     with col_g2:
-        # Reemplazamos el Gauge de Plotly por la barra de progreso estilo HTML/CSS idéntica a React
+        # Importante: Este bloque HTML debe estar pegado a la izquierda sin espacios para que Markdown no lo tome como bloque de código
         st.markdown('<div style="background-color: white; padding: 2.5rem 1.5rem; border-radius: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #f1f5f9; height: 100%; display: flex; flex-direction: column; justify-content: center;">', unsafe_allow_html=True)
         
         porcentaje = min((egresos / ingresos) * 100, 100) if ingresos > 0 else (100 if egresos > 0 else 0)
         color_barra = "#ef4444" if egresos > ingresos else "#3b82f6"
         
         html_barra = f"""
-        <h3 style="color: #1e293b; margin-top: 0; margin-bottom: 2rem; font-size: 1.125rem; font-family: sans-serif; text-align: center; font-weight: normal;">Egresos vs Ingresos</h3>
-        
-        <div style="max-width: 400px; margin: 0 auto; width: 100%;">
-            <div style="display: flex; justify-content: space-between; font-size: 0.875rem; color: #475569; margin-bottom: 0.75rem; font-weight: 500; font-family: sans-serif;">
-                <span>Egresos: S/ {egresos:,.2f}</span>
-                <span>Ingresos: S/ {ingresos:,.2f}</span>
-            </div>
-            
-            <div style="width: 100%; background-color: #d1fae5; border-radius: 9999px; height: 1.25rem; overflow: hidden; box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);">
-                <div style="width: {porcentaje}%; background-color: {color_barra}; height: 100%; border-radius: 9999px; transition: width 1s ease-in-out;"></div>
-            </div>
-            
-            <p style="margin-top: 1rem; color: #64748b; font-size: 0.875rem; font-weight: 700; text-align: center; font-family: sans-serif;">
-                {porcentaje:.1f}% Consumido
-            </p>
-        </div>
-        """
+<h3 style="color: #1e293b; margin-top: 0; margin-bottom: 2rem; font-size: 1.125rem; font-family: sans-serif; text-align: center; font-weight: normal;">Egresos vs Ingresos</h3>
+<div style="max-width: 400px; margin: 0 auto; width: 100%;">
+<div style="display: flex; justify-content: space-between; font-size: 0.875rem; color: #475569; margin-bottom: 0.75rem; font-weight: 500; font-family: sans-serif;">
+<span>Egresos: S/ {egresos:,.2f}</span>
+<span>Ingresos: S/ {ingresos:,.2f}</span>
+</div>
+<div style="width: 100%; background-color: #d1fae5; border-radius: 9999px; height: 1.25rem; overflow: hidden; box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);">
+<div style="width: {porcentaje:.2f}%; background-color: {color_barra}; height: 100%; border-radius: 9999px; transition: width 1s ease-in-out;"></div>
+</div>
+<p style="margin-top: 1rem; color: #64748b; font-size: 0.875rem; font-weight: 700; text-align: center; font-family: sans-serif;">
+{porcentaje:.1f}% Consumido
+</p>
+</div>
+"""
         st.markdown(html_barra, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
